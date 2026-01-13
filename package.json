@@ -1,6 +1,6 @@
 {
     "name": "meshcore_USB_control",
-    "description": "USB interface to handle a mashcore companion USB",
+    "description": "USB interface to handle a meshcore companion USB",
     "version": "0.0.1",
     "dependencies": {},
     "node-red": {

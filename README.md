@@ -1,7 +1,7 @@
 meshcore_USB_control
 ====================
 
-USB interface to handle a mashcore companion USB
+USB interface to handle a meshcore companion USB
 
 ### About
 
