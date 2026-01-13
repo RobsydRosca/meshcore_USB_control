@@ -1,0 +1,445 @@
+[
+    {
+        "id": "b5733c15fc7aa4a3",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "1b273bc8702830eb",
+        "type": "tab",
+        "label": "Hardware",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "ec7bf5fc2e81df2b",
+        "type": "serial-port",
+        "name": "Serial_out",
+        "serialport": "/dev/ttyUSB0",
+        "serialbaud": "115200",
+        "databits": 8,
+        "parity": "none",
+        "stopbits": 1,
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "",
+        "bin": "bin",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": "1000"
+    },
+    {
+        "id": "1402d20a204dda9a",
+        "type": "serial-port",
+        "name": "Serial_in",
+        "serialport": "/dev/ttyUSB0",
+        "serialbaud": "115200",
+        "databits": 8,
+        "parity": "none",
+        "stopbits": 1,
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "100",
+        "bin": "bin",
+        "out": "time",
+        "addchar": "",
+        "responsetimeout": "1000"
+    },
+    {
+        "id": "9f70b7e5409a4eb1",
+        "type": "function",
+        "z": "b5733c15fc7aa4a3",
+        "name": "function 1",
+        "func": "// Costanti del protocollo\nconst HEADER = 0x3C;\nconst OPCODE_TEXT_CMD = 0x13; // 19 dec: Per comandi testuali (es. \"reboot\")\n\nlet opCode;\nlet dataBuffer;\n// --- LOGICA DI SELEZIONE COMANDO ---\n// CASO 1: Ingresso Numerico -> È un OpCode diretto (es. 22 per Query, 1 per Start)\n\nif (typeof msg.payload === 'number') {\n    opCode = msg.payload;\n    dataBuffer = Buffer.alloc(0); // Nessun payload dati, solo l'OpCode\n}\n\n// CASO 2: Ingresso Stringa -> È un comando CLI (es. \"reboot\")\nelse if (typeof msg.payload === 'string') {\n    opCode = OPCODE_TEXT_CMD;\n    dataBuffer = Buffer.from(msg.payload);\n}\n\n// CASO 3: Ingresso Oggetto personalizzato (per comandi binari complessi)\n// Esempio input: { op: 22, data: [0x01, 0x02] }\n\nelse if (typeof msg.payload === 'object' && msg.payload.op) {\n    opCode = msg.payload.op;\n    \n    if (msg.payload.name) {\n        // Se l'oggetto ha una proprietà \"name\", la convertiamo in Buffer\n        dataBuffer = Buffer.from(msg.payload.name);\n    } else {\n        // Altrimenti usiamo il campo data come facevi prima\n        dataBuffer = Buffer.from(msg.payload.data || []);\n    }\n}\n\nelse {\n    node.error(\"Tipo di payload non supportato\");\n    return null;\n}\n\n// --- COSTRUZIONE DEL PACCHETTO ---\n// 1. Calcola la lunghezza totale del payload protocollo\n// La lunghezza nel protocollo Companion include l'OpCode stesso (1 byte) + i dati\nconst payloadLength = 1 + dataBuffer.length;\n\n// 2. Crea il Buffer della lunghezza (2 bytes, Little Endian)\nconst lenBuffer = Buffer.alloc(2);\nlenBuffer.writeUInt16LE(payloadLength, 0);\n\n// 3. Assembla il pacchetto finale\n// [HEADER] [LEN_LOW] [LEN_HIGH] [OPCODE] [DATA...]\n\nmsg.payload = Buffer.concat([\n    Buffer.from([HEADER]),       // 0x3C\n    lenBuffer,                   // Lunghezza (include l'opcode)\n    Buffer.from([opCode]),       // L'OpCode effettivo\n    dataBuffer                   // I dati (vuoto se è solo un comando diretto)\n]);\n\n// Debug visuale per capire cosa stiamo inviando\nnode.warn(`TX -> OpCode: ${opCode} (0x${opCode.toString(16)}), Len: ${payloadLength}`);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 320,
+        "wires": [
+            [
+                "542751dd1986e3c6",
+                "0fa864b45378c1eb"
+            ]
+        ]
+    },
+    {
+        "id": "c640e5a9f75b9940",
+        "type": "function",
+        "z": "b5733c15fc7aa4a3",
+        "name": "JSON | Text | Raw",
+        "func": "// Recupera il buffer\nconst buf = msg.payload;\n\n// --- Configurazione Uscite ---\n// Uscita 1: Oggetto JSON strutturato (Dati utili)\n// Uscita 2: Testo semplice (Log/Messaggi Console)\n// Uscita 3: Debug Raw (Hex)\nlet msg1 = null;\nlet msg2 = null;\nlet msg3 = null;\n\n// Validazione Buffer\nif (!Buffer.isBuffer(buf)) {\n    msg2 = { payload: buf, type: \"not_buffer\" };\n    return [msg1, msg2, msg3];\n}\n\n// Byte Iniziale (Header)\nconst header = buf[0];\n\n// --- 1. GESTIONE PROTOCOLLO BINARIO (0x3C o 0x3E) ---\nif (header === 0x3C || header === 0x3E) {\n    try {\n        // Leggi Lunghezza (Bytes 1-2)\n        const totalLen = buf.readUInt16LE(1);\n        \n        // Leggi OpCode (Byte 3)\n        const opCode = buf[3];\n        \n        // Estrai il Payload Dati (dal byte 4 in poi)\n        // totalLen include l'OpCode, quindi sottraiamo 1 per avere solo i dati\n        const dataLen = totalLen - 1;\n        const payloadData = buf.subarray(4, 4 + dataLen);\n\n        // Costruiamo l'oggetto di risposta\n        const responseObj = {\n            dir: (header === 0x3E) ? \"RX (Response)\" : \"TX (Echo)\", // Direzione\n            opCode: opCode,\n            opCodeHex: \"0x\" + opCode.toString(16).toUpperCase(),\n            dataHex: payloadData.toString('hex').toUpperCase(),\n            dataInt: (dataLen > 0 && dataLen <= 4) ? payloadData.readUIntLE(0, dataLen) : null\n        };\n\n        // --- INTERPRETAZIONE SPECIFICA ---\n        // Qui aggiungeremo man mano i casi specifici\n        if (opCode === 1) {\n             responseObj.meaning = \"CMD_APP_START / ACK\";\n             responseObj.status = (payloadData[0] === 1) ? \"OK/Active\" : \"Fail/Inactive\";\n        }\n        else if (opCode === 22) { // 0x16\n             responseObj.meaning = \"DEVICE_QUERY_RESPONSE\";\n             // Se arrivano dati lunghi, qui decodificheremo ID e Versione\n        }\n\n\n        else if (opCode === 8) {\n            responseObj.meaning = \"CMD_SET_ADVERT_NAME / ACK\";\n        }\n        else if (opCode === 5) {\n            responseObj.meaning = \"RESP_CODE_SELF_INFO\";\n            // Nota: qui il dataInt fallirebbe comunque perché SELF_INFO è molto lungo, \n            // ma con la modifica sopra (dataLen <= 4) verrà messo a 'null' correttamente.\n        }\n\n\n\n        msg1 = { payload: responseObj };\n\n    } catch (e) {\n        msg3 = { error: \"Errore parsing pacchetto\", details: e.message };\n    }\n} \n// --- 2. GESTIONE TESTO/LOG (Non inizia con 3C o 3E) ---\nelse {\n    msg2 = { payload: buf.toString().trim(), type: \"text_log\" };\n}\n\n// --- 3. DEBUG SEMPRE ATTIVO (Uscita 3) ---\nmsg3 = msg3 || { \n    rawHex: buf.toString('hex').toUpperCase(), \n    length: buf.length \n};\n\nreturn [msg1, msg2, msg3];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 160,
+        "wires": [
+            [
+                "462e8445db2316b6"
+            ],
+            [
+                "318bbbfd092ab82f"
+            ],
+            [
+                "5b6739b1f84a8c69"
+            ]
+        ]
+    },
+    {
+        "id": "542751dd1986e3c6",
+        "type": "debug",
+        "z": "b5733c15fc7aa4a3",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 800,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "2d88ab796e7e7631",
+        "type": "inject",
+        "z": "b5733c15fc7aa4a3",
+        "name": "query",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "22",
+        "payloadType": "num",
+        "x": 390,
+        "y": 280,
+        "wires": [
+            [
+                "9f70b7e5409a4eb1"
+            ]
+        ]
+    },
+    {
+        "id": "b4e040567cf06263",
+        "type": "inject",
+        "z": "b5733c15fc7aa4a3",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "reboot",
+        "payloadType": "str",
+        "x": 390,
+        "y": 320,
+        "wires": [
+            [
+                "9f70b7e5409a4eb1"
+            ]
+        ]
+    },
+    {
+        "id": "462e8445db2316b6",
+        "type": "debug",
+        "z": "b5733c15fc7aa4a3",
+        "name": "RX Decoded",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 850,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "318bbbfd092ab82f",
+        "type": "debug",
+        "z": "b5733c15fc7aa4a3",
+        "name": "RX Text",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 840,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "5b6739b1f84a8c69",
+        "type": "debug",
+        "z": "b5733c15fc7aa4a3",
+        "name": "RX RAW Hex",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 860,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "a442679f23f536a1",
+        "type": "debug",
+        "z": "b5733c15fc7aa4a3",
+        "name": "debug 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "c9d181fa506f79ab",
+        "type": "inject",
+        "z": "b5733c15fc7aa4a3",
+        "name": "start",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "1",
+        "payloadType": "num",
+        "x": 390,
+        "y": 360,
+        "wires": [
+            [
+                "9f70b7e5409a4eb1"
+            ]
+        ]
+    },
+    {
+        "id": "2a24e300fe3e40c0",
+        "type": "inject",
+        "z": "b5733c15fc7aa4a3",
+        "name": "get_time",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "5",
+        "payloadType": "num",
+        "x": 400,
+        "y": 400,
+        "wires": [
+            [
+                "9f70b7e5409a4eb1"
+            ]
+        ]
+    },
+    {
+        "id": "71c95d201957ceae",
+        "type": "inject",
+        "z": "b5733c15fc7aa4a3",
+        "name": "self_advert",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "7",
+        "payloadType": "num",
+        "x": 400,
+        "y": 440,
+        "wires": [
+            [
+                "9f70b7e5409a4eb1"
+            ]
+        ]
+    },
+    {
+        "id": "dd6ba1b72d4429f7",
+        "type": "inject",
+        "z": "b5733c15fc7aa4a3",
+        "name": "set_name",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"op\":8,\"name\":\"RobCompUSB\"}",
+        "payloadType": "json",
+        "x": 400,
+        "y": 480,
+        "wires": [
+            [
+                "9f70b7e5409a4eb1"
+            ]
+        ]
+    },
+    {
+        "id": "0fa864b45378c1eb",
+        "type": "link out",
+        "z": "b5733c15fc7aa4a3",
+        "name": "link out 1",
+        "mode": "link",
+        "links": [
+            "bd252802ad1e5072"
+        ],
+        "x": 785,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "5356295ca9f36d40",
+        "type": "link in",
+        "z": "b5733c15fc7aa4a3",
+        "name": "link in 2",
+        "links": [
+            "e5fc5f71b75b53dc"
+        ],
+        "x": 365,
+        "y": 140,
+        "wires": [
+            [
+                "c640e5a9f75b9940",
+                "a442679f23f536a1"
+            ]
+        ]
+    },
+    {
+        "id": "a3b874be314d24da",
+        "type": "serial out",
+        "z": "1b273bc8702830eb",
+        "name": "",
+        "serial": "ec7bf5fc2e81df2b",
+        "x": 800,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "bd252802ad1e5072",
+        "type": "link in",
+        "z": "1b273bc8702830eb",
+        "name": "link in 1",
+        "links": [
+            "0fa864b45378c1eb"
+        ],
+        "x": 535,
+        "y": 280,
+        "wires": [
+            [
+                "a3b874be314d24da"
+            ]
+        ]
+    },
+    {
+        "id": "0cd6c0e4cc29f697",
+        "type": "serial in",
+        "z": "1b273bc8702830eb",
+        "name": "Serial_in",
+        "serial": "1402d20a204dda9a",
+        "x": 560,
+        "y": 180,
+        "wires": [
+            [
+                "e5fc5f71b75b53dc"
+            ]
+        ]
+    },
+    {
+        "id": "e5fc5f71b75b53dc",
+        "type": "link out",
+        "z": "1b273bc8702830eb",
+        "name": "link out 2",
+        "mode": "link",
+        "links": [
+            "5356295ca9f36d40"
+        ],
+        "x": 795,
+        "y": 180,
+        "wires": []
+    }
+]
