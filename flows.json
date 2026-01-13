@@ -190,7 +190,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 850,
-        "y": 120,
+        "y": 100,
         "wires": []
     },
     {
