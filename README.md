@@ -52,7 +52,7 @@ The second flow contains the nodes communicating with the USB port.\
 This separation is necessary to deploy only the modified flows, excluding those operating on the USB ports.\
 Otherwise, the serial port would crash, and it would be necessary to close and run again node-red.\
 
-## Messaggi implementati
+## Implemented commands
 Currently, the implemented messages are few and essential. They are only those useful for verifying the correct transmission and reception of responses.\
 _query_\
 _reboot_\
