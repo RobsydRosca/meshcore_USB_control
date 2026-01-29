@@ -26,13 +26,13 @@ This is the message that node-red writes to my terminal when launching its insta
 29 Jan 18:40:20 - [info] Linux 6.14.0-37-generic x64 LE\
 29 Jan 18:40:21 - [info] Loading palette nodes\
 29 Jan 18:40:22 - [info] Dashboard version 3.6.6 started at /ui\
-29 Jan 18:40:22 - [info] Settings file : /home/rob/.node-red/settings.js\
+29 Jan 18:40:22 - [info] Settings file : ~/.node-red/settings.js\
 29 Jan 18:40:22 - [info] Context store : 'default' [module=memory]\
-29 Jan 18:40:22 - [info] User directory : /home/rob/.node-red\
-29 Jan 18:40:22 - [info] Projects directory: /home/rob/.node-red/projects\
+29 Jan 18:40:22 - [info] User directory : ~/.node-red\
+29 Jan 18:40:22 - [info] Projects directory: ^/.node-red/projects\
 29 Jan 18:40:22 - [info] Server now running at http://127.0.0.1:1880/\
 29 Jan 18:40:22 - [info] Active project : meshcore_USB_control\
-29 Jan 18:40:22 - [info] Flows file: /home/rob/.node-red/projects/meshcore_USB_control/flows.json\
+29 Jan 18:40:22 - [info] Flows file: ~/.node-red/projects/meshcore_USB_control/flows.json\
 29 Jan 18:40:22 - [info] Starting flows\
 29 Jan 18:40:22 - [info] Started flows\
 29 Jan 18:40:24 - [info] [serialconfig:ec7bf5fc2e81df2b] serial port /dev/ttyUSB0 opened at 115200 baud 8N1\
