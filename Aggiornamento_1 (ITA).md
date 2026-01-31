@@ -81,7 +81,7 @@ return msg;
 ```
 
 ## Dettagli Funzionamento
-# 1. Costanti del Protocollo\
+# 1. Costanti del Protocollo
 HEADER (0x3C): Byte di sincronizzazione. Ogni pacchetto valido deve iniziare con questo byte per essere riconosciuto dal firmware.\
 OPCODE_TEXT_CMD (0x13): Codice operativo speciale (decimale 19). Funge da "busta" (wrapper) per inviare stringhe ASCII al parser CLI del dispositivo.\
 
