@@ -67,7 +67,6 @@ As I've written several times, this is just a starting point for creating a node
 One of the next steps will be to create a global memory to store important meshcore protocol variables, such as node data captured from issued advertisements and the meshcore nodes to use for ACC hops.\
 Furthermore, the documentation of the _function_ nodes will be improved and maximized.
 
-
-
+## Aggiornamento 1 AI (Ita)
 
 
