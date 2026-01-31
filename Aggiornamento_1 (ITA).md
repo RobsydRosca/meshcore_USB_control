@@ -100,7 +100,7 @@ Per comandi avanzati che richiedono parametri specifici.\
 Struttura attesa: { op: <number>, data: <array> } oppure { op: <number>, name: <string> }.
 
 # 3. Assemblaggio del Pacchetto (Packet Assembly)
-Il protocollo richiede una struttura binaria precisa:\
+Il protocollo richiede una struttura binaria precisa:
 
 ## Dettagli di Funzionamento
 
