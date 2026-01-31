@@ -1,4 +1,4 @@
-# meshcore_USB_control
+# meshcore_USB_control via node-red
 ====================
 
 This is an embryonic project that I hope will develop into a complete node-red interface to a Meschcore USB companion.
