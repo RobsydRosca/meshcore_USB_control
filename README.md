@@ -68,7 +68,7 @@ One of the next steps will be to create a global memory to store important meshc
 Furthermore, the documentation of the _function_ nodes will be improved and maximized.
 
 ## Aggiornamento 1 AI (Ita)
-# Documentazione Tecnica: Nodo TX (Encoder Protocollo)
+# Documentazione Tecnica: Nodo TX
 
 ## Descrizione Generale
 Questo script è progettato per essere utilizzato all'interno di un nodo **Function** di Node-RED (denominato "TX" o "Encoder").
