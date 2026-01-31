@@ -1,5 +1,5 @@
 ## Aggiornamento 1 AI (Ita)
-# Documentazione Tecnica: Nodo TX
+# Documentazione: Nodo TX
 
 ## Descrizione Generale
 Questo script è progettato per essere utilizzato all'interno di un nodo **Function** di Node-RED (denominato "TX" o "Encoder").
