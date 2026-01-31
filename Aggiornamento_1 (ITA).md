@@ -1,5 +1,5 @@
-## Aggiornamento 1 AI (Ita)
-# Documentazione: Nodo TX
+## Aggiornamento 1 (Ita)
+# Documentazione: Nodo TX. Generata via AI (Gemini)
 
 ## Descrizione Generale
 Questo script è progettato per essere utilizzato all'interno di un nodo **Function** di Node-RED (denominato "TX" o "Encoder").
